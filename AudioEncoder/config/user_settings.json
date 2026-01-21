@@ -1,0 +1,36 @@
+{
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 5001,
+    "fps": 50,
+    "enabled": false
+  },
+  "audio": {
+    "source_type": "mic",
+    "device_index": 13,
+    "sample_rate": 44100,
+    "chunk_size": 1024
+  },
+  "mode": {
+    "active_mode": "vu",
+    "vu_gain": 0.4962376237623731,
+    "vu_smoothing": 0.33326732673267306,
+    "fft_bands": 4,
+    "fft_gain": 1.0,
+    "fft_smoothing": 0.2,
+    "beat_sensitivity": 1.5,
+    "beat_decay": 0.95,
+    "agc_enabled": true,
+    "agc_target": 0.7,
+    "agc_attack": 0.1,
+    "agc_release": 0.01,
+    "peak_hold_enabled": true,
+    "peak_decay": 0.98
+  },
+  "streams": {
+    "send_4ch_v1": true,
+    "send_2ch_v1": true,
+    "send_rgb_v1": false,
+    "use_v2_protocol": true
+  }
+}

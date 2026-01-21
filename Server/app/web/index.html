@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighting Control Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0c10;
+            --bg-secondary: #12151c;
+            --bg-card: #181c26;
+            --bg-hover: #1e232e;
+            --border-color: #2a3142;
+            --border-active: #4a5568;
+            
+            --text-primary: #e8eaf0;
+            --text-secondary: #8b93a8;
+            --text-muted: #5a6275;
+            
+            --accent-cyan: #00d9ff;
+            --accent-cyan-dim: #00d9ff40;
+            --accent-magenta: #ff00aa;
+            --accent-magenta-dim: #ff00aa40;
+            --accent-amber: #ffb300;
+            --accent-amber-dim: #ffb30040;
+            --accent-green: #00ff88;
+            --accent-green-dim: #00ff8840;
+            --accent-red: #ff4466;
+            
+            --slider-track: #2a3142;
+            --slider-fill: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            
+            --shadow-glow: 0 0 40px rgba(0, 217, 255, 0.15);
+            --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+            
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            
+            --transition-fast: 0.15s ease;
+            --transition-med: 0.25s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* Background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-cyan-dim), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 100%, var(--accent-magenta-dim), transparent),
+                linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 12, 16, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--slider-fill);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: var(--accent-green);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Room sections */
+        .room {
+            margin-bottom: 2.5rem;
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .room:nth-child(1) { animation-delay: 0.1s; }
+        .room:nth-child(2) { animation-delay: 0.2s; }
+        .room:nth-child(3) { animation-delay: 0.3s; }
+
+        .room-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .room-header h2 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .room-header .device-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        /* Room control panel */
+        .room-controls {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .room-controls-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .room-control-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            padding: 2px;
+        }
+
+        .room-control-toggle button {
+            padding: 0.4rem 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .room-control-toggle button:hover {
+            color: var(--text-primary);
+        }
+
+        .room-control-toggle button.active {
+            color: var(--bg-primary);
+            background: var(--accent-cyan);
+        }
+
+        .room-mode-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .room-mode-selector {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 4px;
+        }
+
+        .room-mode-btn {
+            flex: 1;
+            padding: 0.5rem 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .room-mode-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .room-mode-btn.active {
+            color: var(--bg-primary);
+            background: var(--accent-cyan);
+        }
+
+        .room-mode-btn.active.planned {
+            background: var(--accent-amber);
+        }
+
+        .room-mode-btn.active.fast {
+            background: var(--accent-magenta);
+        }
+
+        .room-channels {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .room-channel {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .room-channel-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            min-width: 2rem;
+        }
+
+        .room-channel .slider {
+            height: 6px;
+        }
+
+        .room-channel-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-cyan);
+            min-width: 2.5rem;
+            text-align: right;
+        }
+
+        .room-plan-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .room-plan-select {
+            flex: 1;
+            padding: 0.5rem 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        .room-fast-mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .room-fast-mode-select {
+            flex: 1;
+            padding: 0.5rem 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        .room-fast-mode-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Device grid */
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.25rem;
+        }
+
+        /* Device card */
+        .device-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            transition: all var(--transition-med);
+            box-shadow: var(--shadow-card);
+        }
+
+        .device-card:hover {
+            border-color: var(--border-active);
+            transform: translateY(-2px);
+        }
+
+        .device-card.offline {
+            opacity: 0.6;
+        }
+
+        .device-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.25rem;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .device-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .device-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .device-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.35rem 0.65rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .device-status.online {
+            color: var(--accent-green);
+            background: var(--accent-green-dim);
+        }
+
+        .device-status.offline {
+            color: var(--accent-red);
+            background: rgba(255, 68, 102, 0.15);
+        }
+
+        .device-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Mode selector */
+        .mode-selector {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            margin-bottom: 1.25rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .mode-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .mode-btn.active {
+            color: var(--bg-primary);
+            background: var(--accent-cyan);
+            box-shadow: 0 2px 12px var(--accent-cyan-dim);
+        }
+
+        .mode-btn.active.planned {
+            background: var(--accent-amber);
+            box-shadow: 0 2px 12px var(--accent-amber-dim);
+        }
+
+        .mode-btn.active.fast {
+            background: var(--accent-magenta);
+            box-shadow: 0 2px 12px var(--accent-magenta-dim);
+        }
+
+        /* Channel sliders */
+        .channels {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .channel {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .channel-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 2.5rem;
+        }
+
+        .slider-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--slider-track);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform var(--transition-fast);
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--text-primary);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .channel-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            min-width: 3rem;
+            text-align: right;
+        }
+
+        /* Error display */
+        .device-errors {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .error-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .error-item.has-errors {
+            color: var(--accent-red);
+        }
+
+        /* Plan selector (for planned mode) */
+        .plan-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .plan-select-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .plan-select {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .plan-select:hover {
+            border-color: var(--border-active);
+        }
+
+        .plan-select:focus {
+            outline: none;
+            border-color: var(--accent-amber);
+        }
+
+        .plan-btn {
+            padding: 0.6rem 0.85rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .plan-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-active);
+        }
+
+        .plan-btn.primary {
+            background: var(--accent-amber);
+            color: var(--bg-primary);
+            border-color: var(--accent-amber);
+        }
+
+        .plan-btn.primary:hover {
+            background: #e6a200;
+        }
+
+        .plan-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+        }
+
+        .plan-info span {
+            color: var(--accent-amber);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+            
+            main {
+                padding: 1rem;
+            }
+            
+            .devices-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">💡</div>
+                <h1>Lighting Control Hub</h1>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot" id="ws-status"></div>
+                <span id="ws-status-text">Connecting...</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="app">
+        <div class="empty-state" id="loading">
+            <h3>Loading devices...</h3>
+            <p>Connecting to the server</p>
+        </div>
+    </main>
+
+    <script>
+        // State
+        let devices = [];
+        let rooms = {};
+        let roomsControl = {};  // room_name -> {control_mode, mode, static_values, ...}
+        let plans = [];
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectDelay = 30000;
+        
+        // Echo suppression: track devices with pending slider changes
+        // When user changes a slider, suppress incoming state updates for that device briefly
+        const pendingStaticUntil = {};  // { device_id: timestamp }
+        const pendingRoomStaticUntil = {};  // { room_name: timestamp }
+        const ECHO_SUPPRESS_MS = 800;  // Suppress echoes for 800ms after slider change
+        
+        // Periodic refresh interval (ms)
+        const REFRESH_INTERVAL_MS = 2000;
+        let refreshIntervalId = null;
+
+        // Fetch plans from API
+        async function fetchPlans() {
+            try {
+                const response = await fetch('/api/plans');
+                if (response.ok) {
+                    plans = await response.json();
+                }
+            } catch (e) {
+                console.error('Failed to fetch plans:', e);
+            }
+        }
+
+        // Fetch room control states from API
+        async function fetchRoomsControl() {
+            try {
+                const response = await fetch('/api/rooms/control');
+                if (response.ok) {
+                    roomsControl = await response.json();
+                }
+            } catch (e) {
+                console.error('Failed to fetch rooms control:', e);
+            }
+        }
+
+        // Track if initial render has been done
+        let initialRenderDone = false;
+
+        // WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                reconnectAttempts = 0;
+                updateConnectionStatus(true);
+                // No periodic refresh needed - server pushes on change
+                // Only start fallback polling if WebSocket disconnects
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                startFallbackPolling();
+                scheduleReconnect();
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus(false);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleMessage(message);
+                } catch (e) {
+                    console.error('Failed to parse message:', e);
+                }
+            };
+        }
+
+        function scheduleReconnect() {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+            reconnectAttempts++;
+            console.log(`Reconnecting in ${delay}ms...`);
+            setTimeout(connectWebSocket, delay);
+        }
+
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('ws-status');
+            const text = document.getElementById('ws-status-text');
+            
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Connected';
+                stopFallbackPolling();
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Disconnected';
+            }
+        }
+
+        // Fallback polling (only when WebSocket is disconnected)
+        function startFallbackPolling() {
+            stopFallbackPolling();
+            refreshIntervalId = setInterval(() => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    fetchDevicesHttp();
+                }
+            }, REFRESH_INTERVAL_MS);
+        }
+
+        function stopFallbackPolling() {
+            if (refreshIntervalId) {
+                clearInterval(refreshIntervalId);
+                refreshIntervalId = null;
+            }
+        }
+
+        async function fetchDevicesHttp() {
+            try {
+                const response = await fetch('/api/devices');
+                if (response.ok) {
+                    const data = await response.json();
+                    applyStateUpdate(data);
+                }
+            } catch (e) {
+                console.error('Failed to fetch devices via HTTP:', e);
+            }
+        }
+
+        // Message handling
+        async function handleMessage(message) {
+            switch (message.type) {
+                case 'init':
+                    await fetchPlans();  // Load plans on init
+                    await fetchRoomsControl();  // Load room control states
+                    devices = message.data;
+                    organizeByRoom();
+                    renderDashboard();
+                    initialRenderDone = true;
+                    break;
+                case 'state':
+                    applyStateUpdate(message.data);
+                    break;
+                case 'rooms_control':
+                    const oldRoomsControl = roomsControl;
+                    roomsControl = message.data;
+                    if (initialRenderDone) {
+                        updateRoomControlsIncremental(oldRoomsControl, roomsControl);
+                    } else {
+                        renderDashboard();
+                    }
+                    break;
+                case 'error':
+                    console.error('Server error:', message.message);
+                    break;
+            }
+        }
+
+        function applyStateUpdate(newDevices) {
+            const now = Date.now();
+            
+            // Merge new state with echo suppression for devices with pending slider changes
+            for (const newDevice of newDevices) {
+                const deviceId = newDevice.device_id;
+                const suppressUntil = pendingStaticUntil[deviceId] || 0;
+                
+                if (now < suppressUntil) {
+                    // Device has pending slider change - preserve local static_values
+                    const existingDevice = devices.find(d => d.device_id === deviceId);
+                    if (existingDevice) {
+                        newDevice.static_values = existingDevice.static_values;
+                    }
+                } else {
+                    // Clear expired suppression
+                    delete pendingStaticUntil[deviceId];
+                }
+            }
+            
+            const oldDevices = devices;
+            devices = newDevices;
+            organizeByRoom();
+            
+            // Use incremental updates if initial render is done
+            if (initialRenderDone) {
+                updateDashboardIncremental(oldDevices, newDevices);
+            } else {
+                renderDashboard();
+                initialRenderDone = true;
+            }
+        }
+
+        function updateDashboardIncremental(oldDevices, newDevices) {
+            // Incremental DOM update: only update elements that changed
+            for (const newDevice of newDevices) {
+                const deviceId = newDevice.device_id;
+                const oldDevice = oldDevices.find(d => d.device_id === deviceId);
+                const card = document.querySelector(`.device-card[data-device-id="${deviceId}"]`);
+                
+                if (!card) {
+                    // Device card doesn't exist yet, need full re-render
+            renderDashboard();
+                    return;
+                }
+                
+                // Update online/offline status
+                if (!oldDevice || oldDevice.online !== newDevice.online) {
+                    updateDeviceStatus(card, newDevice);
+                }
+                
+                // Update mode buttons
+                if (!oldDevice || oldDevice.mode !== newDevice.mode) {
+                    updateModeButtons(card, newDevice);
+                    // Mode change also affects channels display
+                    updateChannelsSection(card, newDevice);
+                }
+                
+                // Update channel values (only if not actively being dragged)
+                if (newDevice.mode === 'static' || newDevice.mode === 'fast') {
+                    const values = newDevice.mode === 'fast' ? newDevice.fast_values : newDevice.static_values;
+                    const oldValues = oldDevice ? 
+                        (newDevice.mode === 'fast' ? oldDevice.fast_values : oldDevice.static_values) : null;
+                    
+                    if (!oldValues || !arraysEqual(values, oldValues)) {
+                        updateSliderValues(card, newDevice);
+                    }
+                }
+                
+                // Update planned mode plan selection
+                if (newDevice.mode === 'planned' && 
+                    (!oldDevice || oldDevice.planned_plan_id !== newDevice.planned_plan_id)) {
+                    updatePlanSelector(card, newDevice);
+                }
+                
+                // Update error counts
+                if (!oldDevice || 
+                    oldDevice.error_count !== newDevice.error_count || 
+                    oldDevice.reconnect_count !== newDevice.reconnect_count) {
+                    updateErrorDisplay(card, newDevice);
+                }
+            }
+            
+            // Check if any devices were removed
+            if (oldDevices.length !== newDevices.length) {
+                renderDashboard();
+            }
+        }
+        
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+        
+        function updateDeviceStatus(card, device) {
+            const statusEl = card.querySelector('.device-status');
+            if (statusEl) {
+                statusEl.className = `device-status ${device.online ? 'online' : 'offline'}`;
+                statusEl.innerHTML = `<div class="dot"></div>${device.online ? 'Online' : 'Offline'}`;
+            }
+            card.classList.toggle('offline', !device.online);
+        }
+        
+        function updateModeButtons(card, device) {
+            card.querySelectorAll('.mode-btn').forEach(btn => {
+                const mode = btn.dataset.mode;
+                const isActive = device.mode === mode;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('planned', isActive && mode === 'planned');
+                btn.classList.toggle('fast', isActive && mode === 'fast');
+            });
+        }
+        
+        function updateChannelsSection(card, device) {
+            const channelsEl = card.querySelector('.channels');
+            if (channelsEl) {
+                channelsEl.innerHTML = renderChannels(device);
+                // Reattach listeners for new elements
+                channelsEl.querySelectorAll('.slider').forEach(slider => {
+                    slider.addEventListener('input', handleSliderInput);
+                    slider.addEventListener('change', handleSliderChange);
+                });
+                channelsEl.querySelectorAll('.plan-select').forEach(select => {
+                    select.addEventListener('change', handlePlanChange);
+                });
+            }
+        }
+        
+        function updateSliderValues(card, device) {
+            const values = device.mode === 'fast' ? device.fast_values : device.static_values;
+            const sliders = card.querySelectorAll('.slider');
+            
+            sliders.forEach((slider, i) => {
+                // Don't update slider if it's being dragged
+                if (document.activeElement === slider) return;
+                
+                const value = values[i] || 0;
+                if (parseInt(slider.value) !== value) {
+                    slider.value = value;
+                    const valueSpan = slider.closest('.channel')?.querySelector('.channel-value');
+                    if (valueSpan) {
+                        const percent = Math.round((value / 255) * 100);
+                        valueSpan.textContent = `${percent}%`;
+                    }
+                }
+            });
+        }
+        
+        function updatePlanSelector(card, device) {
+            const select = card.querySelector('.plan-select');
+            if (select) {
+                select.value = device.planned_plan_id || '';
+            }
+        }
+        
+        function updateErrorDisplay(card, device) {
+            let errorsEl = card.querySelector('.device-errors');
+            
+            if (device.error_count === 0 && device.reconnect_count === 0) {
+                if (errorsEl) errorsEl.remove();
+                return;
+            }
+            
+            const errorsHtml = `
+                <div class="device-errors">
+                    <div class="error-item ${device.error_count > 0 ? 'has-errors' : ''}">
+                        ⚠️ Errors: ${device.error_count}
+                    </div>
+                    <div class="error-item">
+                        🔄 Reconnects: ${device.reconnect_count}
+                    </div>
+                </div>
+            `;
+            
+            if (errorsEl) {
+                errorsEl.outerHTML = errorsHtml;
+            } else {
+                card.insertAdjacentHTML('beforeend', errorsHtml);
+            }
+        }
+
+        function updateRoomControlsIncremental(oldRoomsControl, newRoomsControl) {
+            // Update room controls for each room that changed
+            for (const [roomName, newRoomControl] of Object.entries(newRoomsControl)) {
+                const oldRoomControl = oldRoomsControl[roomName];
+                const roomSection = document.querySelector(`.room[data-room-name="${roomName}"]`);
+                
+                if (!roomSection) {
+                    // Room section doesn't exist, need full re-render
+                    renderDashboard();
+                    return;
+                }
+                
+                // Check if control mode changed
+                if (!oldRoomControl || oldRoomControl.control_mode !== newRoomControl.control_mode) {
+                    // Control mode changed - need to re-render room controls and device cards
+                    const roomDevices = rooms[roomName] || [];
+                    const roomControlsEl = roomSection.querySelector('.room-controls');
+                    if (roomControlsEl) {
+                        roomControlsEl.outerHTML = renderRoomControls(roomName, newRoomControl, roomDevices);
+                    }
+                    
+                    // Re-render device cards with new auto/manual state
+                    const devicesGrid = roomSection.querySelector('.devices-grid');
+                    if (devicesGrid) {
+                        const isAutoMode = newRoomControl.control_mode === 'auto';
+                        devicesGrid.innerHTML = roomDevices.map(d => renderDeviceCard(d, isAutoMode)).join('');
+                    }
+                    
+                    // Reattach event listeners
+                    attachEventListeners();
+                    continue;
+                }
+                
+                // Control mode didn't change, but other room settings might have
+                if (newRoomControl.control_mode === 'auto') {
+                    // Update room mode buttons
+                    const roomModeBtns = roomSection.querySelectorAll('.room-mode-btn');
+                    roomModeBtns.forEach(btn => {
+                        const mode = btn.dataset.mode;
+                        const isActive = newRoomControl.mode === mode;
+                        btn.classList.toggle('active', isActive);
+                        btn.classList.toggle('planned', isActive && mode === 'planned');
+                        btn.classList.toggle('fast', isActive && mode === 'fast');
+                    });
+                    
+                    // Update room mode settings if mode changed
+                    if (!oldRoomControl || oldRoomControl.mode !== newRoomControl.mode) {
+                        const roomModeControls = roomSection.querySelector('.room-mode-controls');
+                        if (roomModeControls) {
+                            const maxChannels = Math.max(...(rooms[roomName] || []).map(d => d.channels), 4);
+                            const channelLabels = (rooms[roomName]?.[0]?.channel_labels) || Array.from({length: maxChannels}, (_, i) => `CH${i+1}`);
+                            const settingsHtml = renderRoomModeSettings(roomName, newRoomControl, channelLabels, maxChannels);
+                            const existingSettings = roomModeControls.querySelector('.room-channels, .room-plan-selector, .room-fast-mode-selector');
+                            if (existingSettings) {
+                                existingSettings.outerHTML = settingsHtml;
+                            } else {
+                                roomModeControls.insertAdjacentHTML('beforeend', settingsHtml);
+                            }
+                            attachEventListeners();
+                        }
+                    }
+                }
+            }
+        }
+
+        function organizeByRoom() {
+            rooms = {};
+            for (const device of devices) {
+                const roomName = device.room || 'Unknown';
+                if (!rooms[roomName]) {
+                    rooms[roomName] = [];
+                }
+                rooms[roomName].push(device);
+            }
+        }
+
+        // Render functions
+        function renderDashboard() {
+            const app = document.getElementById('app');
+            
+            if (Object.keys(rooms).length === 0) {
+                app.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No devices configured</h3>
+                        <p>Add devices to config/config.yaml and restart the server</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            let roomIndex = 0;
+            
+            for (const [roomName, roomDevices] of Object.entries(rooms)) {
+                const roomControl = roomsControl[roomName] || {
+                    control_mode: 'manual',
+                    mode: 'static',
+                    static_values: [0, 0, 0, 0],
+                    planned_plan_id: null,
+                    fast_mode_type: 'internal'
+                };
+                const isAutoMode = roomControl.control_mode === 'auto';
+                
+                html += `
+                    <section class="room" style="animation-delay: ${roomIndex * 0.1}s" data-room-name="${escapeHtml(roomName)}">
+                        <div class="room-header">
+                            <h2>${escapeHtml(roomName)}</h2>
+                            <span class="device-count">${roomDevices.length} device${roomDevices.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        ${renderRoomControls(roomName, roomControl, roomDevices)}
+                        <div class="devices-grid">
+                            ${roomDevices.map(d => renderDeviceCard(d, isAutoMode)).join('')}
+                        </div>
+                    </section>
+                `;
+                roomIndex++;
+            }
+            
+            app.innerHTML = html;
+            attachEventListeners();
+        }
+
+        function renderRoomControls(roomName, roomControl, roomDevices) {
+            const isAutoMode = roomControl.control_mode === 'auto';
+            
+            // Get max channels from devices in room
+            const maxChannels = Math.max(...roomDevices.map(d => d.channels), 4);
+            const channelLabels = roomDevices[0]?.channel_labels || Array.from({length: maxChannels}, (_, i) => `CH${i+1}`);
+            
+            let modeControlsHtml = '';
+            
+            if (isAutoMode) {
+                // Show room mode controls
+                modeControlsHtml = `
+                    <div class="room-mode-controls">
+                        <div class="room-mode-selector">
+                            <button class="room-mode-btn ${roomControl.mode === 'static' ? 'active' : ''}" 
+                                    data-room="${escapeHtml(roomName)}" data-mode="static">Static</button>
+                            <button class="room-mode-btn ${roomControl.mode === 'planned' ? 'active planned' : ''}" 
+                                    data-room="${escapeHtml(roomName)}" data-mode="planned">Planned</button>
+                            <button class="room-mode-btn ${roomControl.mode === 'fast' ? 'active fast' : ''}" 
+                                    data-room="${escapeHtml(roomName)}" data-mode="fast">Fast</button>
+                        </div>
+                        ${renderRoomModeSettings(roomName, roomControl, channelLabels, maxChannels)}
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="room-controls">
+                    <div class="room-controls-header">
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Room Control</span>
+                        <div class="room-control-toggle">
+                            <button class="${!isAutoMode ? 'active' : ''}" data-room="${escapeHtml(roomName)}" data-control-mode="manual">Manual</button>
+                            <button class="${isAutoMode ? 'active' : ''}" data-room="${escapeHtml(roomName)}" data-control-mode="auto">Auto</button>
+                        </div>
+                    </div>
+                    ${modeControlsHtml}
+                </div>
+            `;
+        }
+
+        function renderRoomModeSettings(roomName, roomControl, channelLabels, maxChannels) {
+            if (roomControl.mode === 'static') {
+                const values = roomControl.static_values || [];
+                let channelsHtml = '';
+                for (let i = 0; i < maxChannels; i++) {
+                    const value = values[i] || 0;
+                    const percent = Math.round((value / 255) * 100);
+                    const label = channelLabels[i] || `CH${i + 1}`;
+                    channelsHtml += `
+                        <div class="room-channel">
+                            <span class="room-channel-label">${escapeHtml(label)}</span>
+                            <div class="slider-container">
+                                <input type="range" class="slider room-slider" min="0" max="255" value="${value}"
+                                       data-room="${escapeHtml(roomName)}" data-channel="${i}">
+                            </div>
+                            <span class="room-channel-value">${percent}%</span>
+                        </div>
+                    `;
+                }
+                return `<div class="room-channels">${channelsHtml}</div>`;
+            } else if (roomControl.mode === 'planned') {
+                let optionsHtml = '<option value="">-- Select a plan --</option>';
+                for (const plan of plans) {
+                    const selected = plan.plan_id === roomControl.planned_plan_id ? 'selected' : '';
+                    optionsHtml += `<option value="${escapeHtml(plan.plan_id)}" ${selected}>${escapeHtml(plan.name)}</option>`;
+                }
+                return `
+                    <div class="room-plan-selector">
+                        <select class="room-plan-select" data-room="${escapeHtml(roomName)}">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `;
+            } else if (roomControl.mode === 'fast') {
+                return `
+                    <div class="room-fast-mode-selector">
+                        <span class="room-fast-mode-label">Mode:</span>
+                        <select class="room-fast-mode-select" data-room="${escapeHtml(roomName)}">
+                            <option value="internal" ${roomControl.fast_mode_type === 'internal' ? 'selected' : ''}>Internal</option>
+                            <option value="udp_repeater" ${roomControl.fast_mode_type === 'udp_repeater' ? 'selected' : ''}>UDP Repeater</option>
+                        </select>
+                    </div>
+                `;
+            }
+            return '';
+        }
+
+        function renderDeviceCard(device, isRoomAutoMode = false) {
+            const statusClass = device.online ? 'online' : 'offline';
+            const cardClass = device.online ? '' : 'offline';
+            const disabledClass = isRoomAutoMode ? 'style="opacity: 0.7; pointer-events: none;"' : '';
+            
+            return `
+                <div class="device-card ${cardClass}" data-device-id="${escapeHtml(device.device_id)}">
+                    <div class="device-header">
+                        <div class="device-info">
+                            <div class="device-name">${escapeHtml(device.device_id)}</div>
+                            <div class="device-meta">
+                                <span>📍 ${escapeHtml(device.ip)}</span>
+                                <span>📦 v${escapeHtml(device.firmware_version)}</span>
+                            </div>
+                        </div>
+                        <div class="device-status ${statusClass}">
+                            <div class="dot"></div>
+                            ${device.online ? 'Online' : 'Offline'}
+                        </div>
+                    </div>
+                    
+                    <div class="mode-selector" ${disabledClass}>
+                        <button class="mode-btn ${device.mode === 'static' ? 'active' : ''}" 
+                                data-mode="static" data-device="${escapeHtml(device.device_id)}"
+                                ${isRoomAutoMode ? 'disabled' : ''}>
+                            Static
+                        </button>
+                        <button class="mode-btn ${device.mode === 'planned' ? 'active planned' : ''}" 
+                                data-mode="planned" data-device="${escapeHtml(device.device_id)}"
+                                ${isRoomAutoMode ? 'disabled' : ''}>
+                            Planned
+                        </button>
+                        <button class="mode-btn ${device.mode === 'fast' ? 'active fast' : ''}" 
+                                data-mode="fast" data-device="${escapeHtml(device.device_id)}"
+                                ${isRoomAutoMode ? 'disabled' : ''}>
+                            Fast
+                        </button>
+                    </div>
+                    
+                    <div class="channels" ${disabledClass}>
+                        ${renderChannels(device, isRoomAutoMode)}
+                    </div>
+                    
+                    ${renderErrors(device)}
+                </div>
+            `;
+        }
+
+        function renderChannels(device, isRoomAutoMode = false) {
+            // For planned mode, show plan selector instead of sliders
+            if (device.mode === 'planned') {
+                return renderPlanSelector(device, isRoomAutoMode);
+            }
+            
+            // For fast mode, show fast mode type selector
+            if (device.mode === 'fast') {
+                return renderFastModeSettings(device, isRoomAutoMode);
+            }
+            
+            let html = '';
+            const values = device.static_values;
+            const labels = device.channel_labels || [];
+            
+            for (let i = 0; i < device.channels; i++) {
+                const value = values[i] || 0;
+                const percent = Math.round((value / 255) * 100);
+                const label = labels[i] || `CH${i + 1}`;
+                
+                html += `
+                    <div class="channel">
+                        <span class="channel-label">${escapeHtml(label)}</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="0" max="255" value="${value}"
+                                   data-device="${escapeHtml(device.device_id)}" 
+                                   data-channel="${i}"
+                                   ${isRoomAutoMode ? 'disabled' : ''}>
+                        </div>
+                        <span class="channel-value">${percent}%</span>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        function renderFastModeSettings(device, isRoomAutoMode = false) {
+            return `
+                <div class="room-fast-mode-selector">
+                    <span class="room-fast-mode-label">Fast Mode:</span>
+                    <select class="room-fast-mode-select device-fast-mode-select" 
+                            data-device="${escapeHtml(device.device_id)}"
+                            ${isRoomAutoMode ? 'disabled' : ''}>
+                        <option value="internal" ${device.fast_mode_type === 'internal' ? 'selected' : ''}>Internal</option>
+                        <option value="udp_repeater" ${device.fast_mode_type === 'udp_repeater' ? 'selected' : ''}>UDP Repeater</option>
+                    </select>
+                </div>
+            `;
+        }
+
+        function renderPlanSelector(device, isRoomAutoMode = false) {
+            const selectedPlan = plans.find(p => p.plan_id === device.planned_plan_id);
+            
+            let optionsHtml = '<option value="">-- Select a plan --</option>';
+            for (const plan of plans) {
+                const selected = plan.plan_id === device.planned_plan_id ? 'selected' : '';
+                optionsHtml += `<option value="${escapeHtml(plan.plan_id)}" ${selected}>${escapeHtml(plan.name)}</option>`;
+            }
+            
+            let planInfo = '';
+            if (selectedPlan) {
+                planInfo = `
+                    <div class="plan-info">
+                        <span>${selectedPlan.step_count}</span> steps · 
+                        <span>${selectedPlan.interval_ms}ms</span> interval · 
+                        <span>${selectedPlan.channels}ch</span>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="plan-selector">
+                    <div class="plan-select-row">
+                        <select class="plan-select" data-device="${escapeHtml(device.device_id)}"
+                                ${isRoomAutoMode ? 'disabled' : ''}>
+                            ${optionsHtml}
+                        </select>
+                        ${device.planned_plan_id ? `
+                            <a href="/plans-ui?edit=${encodeURIComponent(device.planned_plan_id)}" class="plan-btn" title="Edit plan">
+                                ✏️ Edit
+                            </a>
+                        ` : ''}
+                    </div>
+                    ${planInfo}
+                    <div class="plan-select-row">
+                        <a href="/plans-ui" class="plan-btn primary">
+                            ➕ New Plan
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderErrors(device) {
+            if (device.error_count === 0 && device.reconnect_count === 0) {
+                return '';
+            }
+            
+            return `
+                <div class="device-errors">
+                    <div class="error-item ${device.error_count > 0 ? 'has-errors' : ''}">
+                        ⚠️ Errors: ${device.error_count}
+                    </div>
+                    <div class="error-item">
+                        🔄 Reconnects: ${device.reconnect_count}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Event handling
+        function attachEventListeners() {
+            // Mode buttons (device-level)
+            document.querySelectorAll('.mode-btn:not(.room-mode-btn)').forEach(btn => {
+                btn.addEventListener('click', handleModeChange);
+            });
+            
+            // Sliders (device-level)
+            document.querySelectorAll('.slider:not(.room-slider)').forEach(slider => {
+                slider.addEventListener('input', handleSliderInput);
+                slider.addEventListener('change', handleSliderChange);
+            });
+            
+            // Plan selectors (device-level)
+            document.querySelectorAll('.plan-select').forEach(select => {
+                select.addEventListener('change', handlePlanChange);
+            });
+            
+            // Device fast mode type selectors
+            document.querySelectorAll('.device-fast-mode-select').forEach(select => {
+                select.addEventListener('change', handleDeviceFastModeTypeChange);
+            });
+
+            // --- Room-level controls ---
+            
+            // Room control mode toggle (AUTO/MANUAL)
+            document.querySelectorAll('.room-control-toggle button').forEach(btn => {
+                btn.addEventListener('click', handleRoomControlModeChange);
+            });
+            
+            // Room mode buttons
+            document.querySelectorAll('.room-mode-btn').forEach(btn => {
+                btn.addEventListener('click', handleRoomModeChange);
+            });
+            
+            // Room sliders
+            document.querySelectorAll('.room-slider').forEach(slider => {
+                slider.addEventListener('input', handleRoomSliderInput);
+                slider.addEventListener('change', handleRoomSliderChange);
+            });
+            
+            // Room plan selectors
+            document.querySelectorAll('.room-plan-select').forEach(select => {
+                select.addEventListener('change', handleRoomPlanChange);
+            });
+            
+            // Room fast mode type selectors
+            document.querySelectorAll('.room-fast-mode-select:not(.device-fast-mode-select)').forEach(select => {
+                select.addEventListener('change', handleRoomFastModeTypeChange);
+            });
+        }
+
+        function handlePlanChange(event) {
+            const select = event.target;
+            const deviceId = select.dataset.device;
+            const planId = select.value || null;
+            
+            sendMessage({
+                type: 'set_planned_plan',
+                device_id: deviceId,
+                plan_id: planId
+            });
+        }
+
+        function handleModeChange(event) {
+            const btn = event.target;
+            const deviceId = btn.dataset.device;
+            const mode = btn.dataset.mode;
+            
+            sendMessage({
+                type: 'set_mode',
+                device_id: deviceId,
+                mode: mode
+            });
+        }
+
+        function handleSliderInput(event) {
+            // Update the displayed value immediately
+            const slider = event.target;
+            const valueSpan = slider.closest('.channel').querySelector('.channel-value');
+            const percent = Math.round((slider.value / 255) * 100);
+            valueSpan.textContent = `${percent}%`;
+            
+            // Set echo suppression while dragging
+            const deviceId = slider.dataset.device;
+            pendingStaticUntil[deviceId] = Date.now() + ECHO_SUPPRESS_MS;
+            
+            // Also update local device state immediately for smoother UX
+            const device = devices.find(d => d.device_id === deviceId);
+            if (device) {
+                const channel = parseInt(slider.dataset.channel);
+                device.static_values[channel] = parseInt(slider.value);
+            }
+        }
+
+        function handleSliderChange(event) {
+            const slider = event.target;
+            const deviceId = slider.dataset.device;
+            const channel = parseInt(slider.dataset.channel);
+            
+            // Set echo suppression to prevent immediate rerender from server echo
+            pendingStaticUntil[deviceId] = Date.now() + ECHO_SUPPRESS_MS;
+            
+            // Get all slider values for this device
+            const card = slider.closest('.device-card');
+            const sliders = card.querySelectorAll('.slider');
+            const values = Array.from(sliders).map(s => parseInt(s.value));
+            
+            // Update local state
+            const device = devices.find(d => d.device_id === deviceId);
+            if (device) {
+                device.static_values = values;
+            }
+            
+            sendMessage({
+                type: 'set_static',
+                device_id: deviceId,
+                values: values
+            });
+        }
+
+        function handleDeviceFastModeTypeChange(event) {
+            const select = event.target;
+            const deviceId = select.dataset.device;
+            const fastModeType = select.value;
+            
+            sendMessage({
+                type: 'set_device_fast_mode_type',
+                device_id: deviceId,
+                fast_mode_type: fastModeType
+            });
+        }
+
+        // --- Room event handlers ---
+
+        function handleRoomControlModeChange(event) {
+            const btn = event.target;
+            const roomName = btn.dataset.room;
+            const controlMode = btn.dataset.controlMode;
+            
+            sendMessage({
+                type: 'set_room_control_mode',
+                room_name: roomName,
+                control_mode: controlMode
+            });
+        }
+
+        function handleRoomModeChange(event) {
+            const btn = event.target;
+            const roomName = btn.dataset.room;
+            const mode = btn.dataset.mode;
+            
+            sendMessage({
+                type: 'set_room_mode',
+                room_name: roomName,
+                mode: mode
+            });
+        }
+
+        function handleRoomSliderInput(event) {
+            const slider = event.target;
+            const valueSpan = slider.closest('.room-channel').querySelector('.room-channel-value');
+            const percent = Math.round((slider.value / 255) * 100);
+            valueSpan.textContent = `${percent}%`;
+            
+            const roomName = slider.dataset.room;
+            pendingRoomStaticUntil[roomName] = Date.now() + ECHO_SUPPRESS_MS;
+        }
+
+        function handleRoomSliderChange(event) {
+            const slider = event.target;
+            const roomName = slider.dataset.room;
+            
+            pendingRoomStaticUntil[roomName] = Date.now() + ECHO_SUPPRESS_MS;
+            
+            // Get all room slider values
+            const roomSection = slider.closest('.room');
+            const roomSliders = roomSection.querySelectorAll('.room-slider');
+            const values = Array.from(roomSliders).map(s => parseInt(s.value));
+            
+            // Update local state
+            if (roomsControl[roomName]) {
+                roomsControl[roomName].static_values = values;
+            }
+            
+            sendMessage({
+                type: 'set_room_static',
+                room_name: roomName,
+                values: values
+            });
+        }
+
+        function handleRoomPlanChange(event) {
+            const select = event.target;
+            const roomName = select.dataset.room;
+            const planId = select.value || null;
+            
+            sendMessage({
+                type: 'set_room_planned_plan',
+                room_name: roomName,
+                plan_id: planId
+            });
+        }
+
+        function handleRoomFastModeTypeChange(event) {
+            const select = event.target;
+            const roomName = select.dataset.room;
+            const fastModeType = select.value;
+            
+            sendMessage({
+                type: 'set_room_fast_mode_type',
+                room_name: roomName,
+                fast_mode_type: fastModeType
+            });
+        }
+
+        function sendMessage(message) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+            }
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
+

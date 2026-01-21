@@ -1,0 +1,8 @@
+**/__pycache__/**
+.venv/
+
+.pio
+
+**/.vscode/
+
+secrets.h

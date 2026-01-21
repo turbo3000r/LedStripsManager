@@ -1,0 +1,22 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: led_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  server:
+    build: .
+    container_name: led_server
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    ports:
+      - "8000:8000"
+      - "5001:5001/udp"
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml:ro
+      - ./plans:/app/plans

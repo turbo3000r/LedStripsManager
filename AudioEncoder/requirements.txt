@@ -1,0 +1,6 @@
+# AudioEncoder dependencies
+flet>=0.21.0
+numpy>=1.24.0
+scipy>=1.11.0
+sounddevice>=0.4.6
+PyAudio>=0.2.14

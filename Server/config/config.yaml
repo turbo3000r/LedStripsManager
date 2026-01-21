@@ -1,0 +1,60 @@
+# Lighting Control Hub Configuration
+
+mqtt:
+  broker_host: "mosquitto"
+  broker_port: 1883
+  client_id: "lighting_hub"
+  reconnect_delay_min: 1
+  reconnect_delay_max: 60
+  heartbeat_timeout_sec: 10  # Mark device offline after this many seconds without heartbeat
+
+udp:
+  default_port: 5000
+  send_rate_hz: 60  # How often to send UDP packets in fast mode
+
+udp_repeater:
+  enabled: true
+  listen_host: "0.0.0.0"
+  listen_port: 5001  # Port to receive external LED frames for forwarding
+
+planner:
+  interval_sec: 1  # How often to publish plans
+  steps_per_interval: 10  # Number of brightness steps per interval
+  interval_ms: 100  # Time between each step (interval_sec * 1000 / steps_per_interval)
+  # plan_payload_version: 2  # 1 = legacy (timestamp+interval_ms+sequence), 2 = per-step timestamps (default)
+
+rooms:
+  - name: "Living Room"
+    devices:
+      - device_id: "esp_livingroom_1"
+        ip: "192.168.0.3"
+        udp_port: 5000
+        hw_mode: "4ch_v1"  # Green, Yellow, Blue, Red
+        topics:
+          set_plan: "lights/room1/esp_dimmer_1/set_plan"
+          set_static: "lights/room1/esp_dimmer_1/set_static"
+          heartbeat: "lights/room1/esp_dimmer_1/heartbeat"
+        firmware_version: "1.0.0"
+
+      - device_id: "esp_livingroom_2"
+        ip: "192.168.0.4"
+        udp_port: 5000
+        hw_mode: "4ch_v1"  # Green, Yellow, Blue, Red
+        topics:
+          set_plan: "lights/room1/esp_dimmer_2/set_plan"
+          set_static: "lights/room1/esp_dimmer_2/set_static"
+          heartbeat: "lights/room1/esp_dimmer_2/heartbeat"
+        firmware_version: "1.0.0"
+
+  - name: "Bedroom"
+    devices:
+      - device_id: "esp_bedroom_1"
+        ip: "192.168.1.103"
+        udp_port: 5000
+        hw_mode: "4ch_v1"  # Green, Yellow, Blue, Red
+        topics:
+          set_plan: "lights/bedroom/set_plan"
+          set_static: "lights/bedroom/set_static"
+          heartbeat: "lights/bedroom/heartbeat"
+        firmware_version: "1.0.0"
+
